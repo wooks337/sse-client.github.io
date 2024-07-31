@@ -23,18 +23,22 @@
             }
         }
 
-        // 알림 표시
+        // 알림 표시 (Service Worker를 통해)
         function showNotification(message) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification("New Message", {
-                    body: message,
-                    icon: 'notification-icon.png' // 알림에 사용할 아이콘 URL
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                navigator.serviceWorker.ready.then(function(registration) {
+                    registration.showNotification("New Message", {
+                        body: message,
+                        icon: 'notification-icon.png' // 알림에 사용할 아이콘 URL
+                    });
+                }).catch(function(error) {
+                    console.error('Service Worker error:', error);
                 });
             }
         }
 
         // 서버에서 온 메시지를 알림으로 표시
-        const fn = function (e) {
+        const fn = function(e) {
             console.log(e.data);
             showNotification(e.data);
         };
@@ -42,13 +46,22 @@
         // SSE 연결 설정
         const src = new EventSource("https://brk.obigo.com/batch/push");
 
-
         // 메시지 수신 시 호출
         src.onmessage = fn;
 
-        // 페이지 로드 시 권한 요청 및 SSE 연결
+        // 페이지 로드 시 권한 요청 및 Service Worker 등록
         document.addEventListener("DOMContentLoaded", () => {
+            // Notification 권한 요청
             requestNotificationPermission();
+
+            // Service Worker 등록
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sse/sw.js').then(function(registration) {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                }).catch(function(error) {
+                    console.error('Service Worker registration failed:', error);
+                });
+            }
         });
     </script>
 </body>
