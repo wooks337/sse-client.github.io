@@ -44,7 +44,8 @@
         };
 
         // SSE 연결 설정
-        const src = new EventSource("https://brk.obigo.com/batch/push");
+        const src = new EventSource("https://brk.obigo.com/batch/push/subscribe?vin=KNAE14A1AC0000001");
+        //const src = new EventSource("http://localhost:8093/batch/push/subscribe?vin=KNAE14A1AC0000001");
 
         // 메시지 수신 시 호출
         src.onmessage = fn;
