@@ -17,6 +17,8 @@
                     if (permission !== 'granted') {
                         console.log('Notification permission denied.');
                     }
+                }).catch(error => {
+                    console.error('Notification permission request failed:', error);
                 });
             } else {
                 console.log('Notifications are not supported by your browser.');
@@ -30,25 +32,42 @@
                     registration.showNotification("New Message", {
                         body: message,
                         icon: 'notification-icon.png' // 알림에 사용할 아이콘 URL
+                    }).catch(error => {
+                        console.error('Service Worker showNotification failed:', error);
                     });
                 }).catch(function(error) {
-                    console.error('Service Worker error:', error);
+                    console.error('Service Worker registration error:', error);
                 });
             }
         }
 
         // 서버에서 온 메시지를 알림으로 표시
-        const fn = function(e) {
-            console.log(e.data);
-            showNotification(e.data);
+        const handleMessage = function(event) {
+            console.log('Received message:', event.data);
+            showNotification(event.data);
         };
 
         // SSE 연결 설정
-        const src = new EventSource("https://brk.obigo.com/batch/push/subscribe?vin=KNAE14A1AC0000001");
-        //const src = new EventSource("http://localhost:8093/batch/push/subscribe?vin=KNAE14A1AC0000001");
+         const eventSourceUrl = "https://brk.obigo.com/batch/push/subscribe?vin=KNAE14A1AC0000002";
+       // const eventSourceUrl = "http://localhost:8090/batch/push/subscribe?vin=KNAE14A1AC0000001";
+
+        const src = new EventSource(eventSourceUrl);
 
         // 메시지 수신 시 호출
-        src.onmessage = fn;
+        src.onmessage = handleMessage;
+
+        // 이벤트 발생 시 처리
+        src.addEventListener('open', () => {
+            console.log('SSE connection opened.');
+        });
+
+        src.addEventListener('error', (event) => {
+            if (event.readyState === EventSource.CLOSED) {
+                console.log('SSE connection closed.');
+            } else {
+                console.error('SSE error occurred:', event);
+            }
+        });
 
         // 페이지 로드 시 권한 요청 및 Service Worker 등록
         document.addEventListener("DOMContentLoaded", () => {
